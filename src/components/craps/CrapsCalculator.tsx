@@ -442,6 +442,7 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
       highestChips: Math.max(...entries.map((e) => e.finalChips)),
       highestPayout: Math.max(...entries.map((e) => e.payout)),
       avgNet: entries.reduce((s, e) => s + e.net, 0) / entries.length,
+      totalNet: entries.reduce((s, e) => s + e.net, 0),
     };
   };
 
@@ -511,12 +512,13 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
+          <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
             <span>Name</span>
             <span className="w-24 text-center">Games Played</span>
             <span className="w-28 text-right">Highest Chips</span>
             <span className="w-28 text-right">Highest Payout</span>
             <span className="w-24 text-right">Avg Win/Loss</span>
+            <span className="w-28 text-right">Total P/L</span>
             <span className="w-14" />
           </div>
           <div className="divide-y divide-border">
@@ -532,7 +534,7 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
               return (
                 <div
                   key={kp.id}
-                  className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
+                  className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
                 >
                   {/* Name / edit */}
                   {isEditing ? (
@@ -580,6 +582,22 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
                   >
                     {stats.gamesPlayed > 0
                       ? `${stats.avgNet >= 0 ? "+" : ""}${fmt(stats.avgNet)}`
+                      : "—"}
+                  </span>
+
+                  <span
+                    className={`w-28 text-right text-sm font-mono font-bold ${
+                      stats.gamesPlayed > 0
+                        ? stats.totalNet > 0
+                          ? "text-emerald-500"
+                          : stats.totalNet < 0
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {stats.gamesPlayed > 0
+                      ? `${stats.totalNet >= 0 ? "+" : ""}${fmt(stats.totalNet)}`
                       : "—"}
                   </span>
 
