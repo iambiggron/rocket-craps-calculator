@@ -721,7 +721,7 @@ const CrapsCalculator: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 py-6">
         <Tabs defaultValue="today">
           <TabsList className="mb-6">
-            <TabsTrigger value="today">Today Game</TabsTrigger>
+            <TabsTrigger value="today">Today's Game</TabsTrigger>
             <TabsTrigger value="archive">
               Archive
               {archive.length > 0 && (
