@@ -648,7 +648,7 @@ const CrapsCalculator: React.FC = () => {
   );
 
   const addPlayer = () =>
-    setPlayers((ps) => [...ps, newPlayer(`Player ${ps.length + 1}`)]);
+    setPlayers((ps) => [...ps, newPlayer()]);
 
   const resetGame = () =>
     setPlayers((ps) =>
