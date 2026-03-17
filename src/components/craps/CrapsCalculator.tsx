@@ -44,6 +44,7 @@ interface GameSession {
   players: Player[];
   pot: number;
   chipValue: number;
+  notes?: string;
 }
 
 interface KnownPlayer {
@@ -329,6 +330,14 @@ const ArchiveEntry: React.FC<{
             Buy-in: {fmt(session.buyIn)}
           </Badge>
           <span className="text-xs text-muted-foreground">Game Total: {fmt(archiveGameTotal)}</span>
+          {session.notes && (
+            <span
+              className="text-xs text-muted-foreground italic max-w-[200px] truncate"
+              title={session.notes}
+            >
+              {session.notes}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
@@ -615,6 +624,7 @@ const CrapsCalculator: React.FC = () => {
     return loadKnownPlayers(arch);
   });
   const [savedMsg, setSavedMsg] = useState(false);
+  const [notes, setNotes] = useState("");
 
   const chipValue = calcChipValue(buyIn, initialChips);
   const pot = calcPot(players, buyIn);
@@ -653,6 +663,7 @@ const CrapsCalculator: React.FC = () => {
       players: structuredClone(players),
       pot,
       chipValue,
+      notes: notes.trim() || undefined,
     };
     const updatedArchive = [session, ...archive];
     setArchive(updatedArchive);
@@ -669,6 +680,7 @@ const CrapsCalculator: React.FC = () => {
       saveKnownPlayers(updatedKnown);
     }
 
+    setNotes("");
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 2500);
   };
@@ -829,13 +841,13 @@ const CrapsCalculator: React.FC = () => {
             {/* How it works */}
             <div className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-lg px-4 py-2.5 flex flex-wrap gap-x-6 gap-y-1">
               <span>
-                <strong className="text-foreground">Initial buy-in:</strong> ½ → chips · ½ → pot (+ ownership share)
+                <strong className="text-foreground">Initial buy-in:</strong> ½ → chips · ½ → bank (+ ownership share)
               </span>
               <span>
-                <strong className="text-foreground">Rebuy (+):</strong> ½ → chips · ½ → pot (no new ownership)
+                <strong className="text-foreground">Rebuy (+):</strong> ½ → chips · ½ → bank (no new ownership)
               </span>
               <span>
-                <strong className="text-foreground">End of night:</strong> chips × {fmtChipValue(chipValue)} + equal pot share
+                <strong className="text-foreground">End of night:</strong> chips × {fmtChipValue(chipValue)} + equal bank share
               </span>
             </div>
 
@@ -942,6 +954,17 @@ const CrapsCalculator: React.FC = () => {
                 <Archive size={14} className="mr-2" />
                 {savedMsg ? "Saved ✓" : "Save to Archive"}
               </Button>
+            </div>
+
+            {/* Notes */}
+            <div className="flex items-center gap-2">
+              <Label className="text-sm text-muted-foreground shrink-0">Notes:</Label>
+              <Input
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Optional notes for this session…"
+                className="h-9 text-sm"
+              />
             </div>
           </TabsContent>
 
