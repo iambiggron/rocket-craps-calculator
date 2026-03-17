@@ -1,8 +1,8 @@
 import React from "react";
-import WorkflowsHome from "../components/workflows/WorkflowsHome";
+import CrapsCalculator from "../components/craps/CrapsCalculator";
 
 const Index: React.FC = () => {
-  return <WorkflowsHome />;
+  return <CrapsCalculator />;
 };
 
 export default Index;
