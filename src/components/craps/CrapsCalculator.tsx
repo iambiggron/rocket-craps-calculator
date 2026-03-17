@@ -23,6 +23,7 @@ import {
   Pencil,
   Check,
   X,
+  Star,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   const datalistId = `players-list-${player.id}`;
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
+    <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
       {/* Name with datalist dropdown */}
       <div>
         <Input
@@ -302,6 +303,15 @@ const ArchiveEntry: React.FC<{
   const chipValue = calcChipValue(session.buyIn, session.initialChips);
   const numOwners = calcNumOwners(session.players);
   const potSharePerOwner = numOwners > 0 ? session.pot / numOwners : 0;
+  const archiveTotalRebuys = session.players.reduce((s, p) => s + p.rebuys, 0);
+  const archiveGameTotal = (numOwners + archiveTotalRebuys) * session.buyIn;
+  const archiveWinner = session.players.length > 0
+    ? session.players.reduce((best, p) => {
+        const bStats = playerStats(best, session.buyIn, chipValue, potSharePerOwner);
+        const pStats = playerStats(p, session.buyIn, chipValue, potSharePerOwner);
+        return pStats.net > bStats.net ? p : best;
+      })
+    : null;
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
@@ -318,7 +328,7 @@ const ArchiveEntry: React.FC<{
           <Badge variant="outline" className="text-xs border-accent/40 text-accent">
             Buy-in: {fmt(session.buyIn)}
           </Badge>
-          <span className="text-xs text-muted-foreground">Pot: {fmt(session.pot)}</span>
+          <span className="text-xs text-muted-foreground">Game Total: {fmt(archiveGameTotal)}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
@@ -342,6 +352,10 @@ const ArchiveEntry: React.FC<{
             <span>Bank value: {fmt(session.pot)}</span>
             <span>Owners: {numOwners}</span>
             <span>Value per: {fmt(potSharePerOwner)}</span>
+            <span>Re-buys: {archiveTotalRebuys}</span>
+            {archiveWinner && (
+              <span className="text-foreground font-medium">Winner: {archiveWinner.name || "—"}</span>
+            )}
           </div>
           <div className="space-y-2">
             {session.players.map((p) => {
@@ -487,11 +501,11 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
+          <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
             <span>Name</span>
-            <span className="w-16 text-center">Games</span>
-            <span className="w-24 text-right">High Chips</span>
-            <span className="w-24 text-right">High Payout</span>
+            <span className="w-24 text-center">Games Played</span>
+            <span className="w-28 text-right">Highest Chips</span>
+            <span className="w-28 text-right">Highest Payout</span>
             <span className="w-24 text-right">Avg Win/Loss</span>
             <span className="w-14" />
           </div>
@@ -508,7 +522,7 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
               return (
                 <div
                   key={kp.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
+                  className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
                 >
                   {/* Name / edit */}
                   {isEditing ? (
@@ -540,13 +554,13 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
                     <span className="text-sm font-medium text-foreground">{kp.name}</span>
                   )}
 
-                  <span className="w-16 text-center text-sm font-mono text-foreground">
+                  <span className="w-24 text-center text-sm font-mono text-foreground">
                     {stats.gamesPlayed}
                   </span>
-                  <span className="w-24 text-right text-sm font-mono text-foreground">
+                  <span className="w-28 text-right text-sm font-mono text-foreground">
                     {stats.gamesPlayed > 0 ? stats.highestChips.toLocaleString() : "—"}
                   </span>
-                  <span className="w-24 text-right text-sm font-mono text-foreground">
+                  <span className="w-28 text-right text-sm font-mono text-foreground">
                     {stats.gamesPlayed > 0 ? fmt(stats.highestPayout) : "—"}
                   </span>
                   <span
@@ -606,6 +620,8 @@ const CrapsCalculator: React.FC = () => {
   const pot = calcPot(players, buyIn);
   const numOwners = calcNumOwners(players);
   const potSharePerOwner = numOwners > 0 ? pot / numOwners : 0;
+  const totalRebuyCount = players.reduce((s, p) => s + p.rebuys, 0);
+  const gameTotal = (numOwners + totalRebuyCount) * buyIn;
 
   const knownPlayerNames = knownPlayers.map((p) => p.name);
 
@@ -789,6 +805,11 @@ const CrapsCalculator: React.FC = () => {
                       <div className="text-xs text-muted-foreground">per chip</div>
                     </div>
                     <div className="text-center">
+                      <div className="text-xs text-muted-foreground mb-0.5">Game Total</div>
+                      <div className="text-lg font-mono font-bold text-orange-400">{fmt(gameTotal)}</div>
+                      <div className="text-xs text-muted-foreground">cash in</div>
+                    </div>
+                    <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Bank Value</div>
                       <div className="text-lg font-mono font-bold text-emerald-500">{fmt(pot)}</div>
                       <div className="text-xs text-muted-foreground">
@@ -819,7 +840,7 @@ const CrapsCalculator: React.FC = () => {
             </div>
 
             {/* Column headers */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
+            <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto_auto] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
               <span>Player</span>
               <span className="w-[88px] text-center">Buy-in</span>
               <span className="w-[108px] text-center">Rebuys</span>
@@ -866,7 +887,7 @@ const CrapsCalculator: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {sortedByNet.map((p) => {
+                    {sortedByNet.map((p, index) => {
                       const stats = playerStats(p, buyIn, chipValue, potSharePerOwner);
                       const netColor =
                         stats.net > 0
@@ -875,11 +896,15 @@ const CrapsCalculator: React.FC = () => {
                           ? "text-destructive"
                           : "text-muted-foreground";
                       const gameCount = getGameCount(p.name);
+                      const isWinner = index === 0 && sortedByNet.length > 1;
                       return (
                         <div
                           key={p.id}
-                          className="bg-muted/40 rounded-lg p-3 border border-border"
+                          className="relative bg-muted/40 rounded-lg p-3 border border-border"
                         >
+                          {isWinner && (
+                            <Star size={14} className="absolute top-2 right-2 text-yellow-400 fill-yellow-400" />
+                          )}
                           <div className="flex items-baseline gap-1 mb-1 min-w-0">
                             <span className="text-sm font-semibold text-foreground truncate">
                               {p.name || "—"}
