@@ -197,100 +197,176 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   const datalistId = `players-list-${player.id}`;
 
   return (
-    <div className="grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
-      {/* Name with datalist dropdown */}
-      <div>
-        <Input
-          list={datalistId}
-          value={player.name}
-          onChange={(e) => onUpdate(player.id, { name: e.target.value })}
-          placeholder="Player name"
-          className="h-8 text-sm"
-        />
-        <datalist id={datalistId}>
-          {knownPlayerNames.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-      </div>
-
-      {/* Bought-in toggle */}
-      <button
-        onClick={() => onUpdate(player.id, { hasBoughtIn: !player.hasBoughtIn })}
-        className={`px-2 py-1 rounded text-xs font-semibold transition-colors whitespace-nowrap ${
-          player.hasBoughtIn
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground hover:text-foreground"
-        }`}
-        title="Toggle initial buy-in"
-      >
-        {player.hasBoughtIn ? "Bought In ✓" : "Buy In"}
-      </button>
-
-      {/* Rebuy counter */}
-      <div className="flex items-center gap-1">
+    <div className="rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
+      {/* ── Desktop row (sm+) ── */}
+      <div className="hidden sm:grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 items-center px-3 py-3">
+        {/* Name */}
+        <div>
+          <Input
+            list={datalistId}
+            value={player.name}
+            onChange={(e) => onUpdate(player.id, { name: e.target.value })}
+            placeholder="Player name"
+            className="h-8 text-sm"
+          />
+          <datalist id={datalistId}>
+            {knownPlayerNames.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </div>
+        {/* Buy-in toggle */}
         <button
-          onClick={() => onUpdate(player.id, { rebuys: Math.max(0, player.rebuys - 1) })}
-          disabled={player.rebuys === 0}
-          className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors disabled:opacity-40"
+          onClick={() => onUpdate(player.id, { hasBoughtIn: !player.hasBoughtIn })}
+          className={`px-2 py-1 rounded text-xs font-semibold transition-colors whitespace-nowrap ${
+            player.hasBoughtIn
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
+          }`}
+          title="Toggle initial buy-in"
         >
-          <Minus size={10} />
+          {player.hasBoughtIn ? "Bought In ✓" : "Buy In"}
         </button>
-        <span className="w-8 text-center text-sm font-mono font-semibold text-foreground">
-          {player.rebuys}
-        </span>
+        {/* Rebuys */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onUpdate(player.id, { rebuys: Math.max(0, player.rebuys - 1) })}
+            disabled={player.rebuys === 0}
+            className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors disabled:opacity-40"
+          >
+            <Minus size={10} />
+          </button>
+          <span className="w-8 text-center text-sm font-mono font-semibold text-foreground">{player.rebuys}</span>
+          <button
+            onClick={() => onUpdate(player.id, { rebuys: player.rebuys + 1 })}
+            className="w-6 h-6 rounded bg-accent/80 hover:bg-accent text-accent-foreground flex items-center justify-center transition-colors"
+          >
+            <Plus size={10} />
+          </button>
+          <span className="text-xs text-muted-foreground ml-0.5">rebuys</span>
+        </div>
+        {/* Final chips */}
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            value={player.finalChips === 0 ? "" : player.finalChips}
+            onChange={(e) =>
+              onUpdate(player.id, { finalChips: Math.max(0, parseInt(e.target.value) || 0) })
+            }
+            placeholder="0"
+            className="w-20 h-8 text-sm"
+          />
+          <span className="text-xs text-muted-foreground">final chips</span>
+        </div>
+        {/* Chip value */}
+        <div>
+          <div className="text-xs text-muted-foreground">chip value</div>
+          <div className="text-sm font-mono text-foreground">{fmt(chipsValue)}</div>
+        </div>
+        {/* Equity */}
+        <div>
+          <div className="text-xs text-muted-foreground">equity stake</div>
+          <div className="text-sm font-mono text-foreground">{fmt(potShare)}</div>
+        </div>
+        {/* Payout + net */}
+        <div>
+          <div className="text-xs text-muted-foreground">payout</div>
+          <div className="text-sm font-mono font-semibold text-foreground">{fmt(totalPayout)}</div>
+          <div className={`text-xs font-mono font-bold ${netColor}`}>{net >= 0 ? "+" : ""}{fmt(net)}</div>
+        </div>
+        {/* Remove */}
         <button
-          onClick={() => onUpdate(player.id, { rebuys: player.rebuys + 1 })}
-          className="w-6 h-6 rounded bg-accent/80 hover:bg-accent text-accent-foreground flex items-center justify-center transition-colors"
-          title="Rebuy"
+          onClick={() => onRemove(player.id)}
+          className="w-7 h-7 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
         >
-          <Plus size={10} />
+          <Trash2 size={13} />
         </button>
-        <span className="text-xs text-muted-foreground ml-0.5">rebuys</span>
       </div>
 
-      {/* Final chips input */}
-      <div className="flex items-center gap-1">
-        <Input
-          type="number"
-          value={player.finalChips === 0 ? "" : player.finalChips}
-          onChange={(e) =>
-            onUpdate(player.id, { finalChips: Math.max(0, parseInt(e.target.value) || 0) })
-          }
-          placeholder="0"
-          className="w-20 h-8 text-sm"
-        />
-        <span className="text-xs text-muted-foreground">final chips</span>
-      </div>
-
-      {/* Chip cash value */}
-      <div>
-        <div className="text-xs text-muted-foreground">chip value</div>
-        <div className="text-sm font-mono text-foreground">{fmt(chipsValue)}</div>
-      </div>
-
-      {/* Equity stake */}
-      <div>
-        <div className="text-xs text-muted-foreground">equity stake</div>
-        <div className="text-sm font-mono text-foreground">{fmt(potShare)}</div>
-      </div>
-
-      {/* Total payout + net */}
-      <div>
-        <div className="text-xs text-muted-foreground">payout</div>
-        <div className="text-sm font-mono font-semibold text-foreground">{fmt(totalPayout)}</div>
-        <div className={`text-xs font-mono font-bold ${netColor}`}>
-          {net >= 0 ? "+" : ""}{fmt(net)}
+      {/* ── Mobile card (< sm) ── */}
+      <div className="sm:hidden px-3 py-3 space-y-2.5">
+        {/* Row 1: Name + Delete */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <Input
+              list={datalistId}
+              value={player.name}
+              onChange={(e) => onUpdate(player.id, { name: e.target.value })}
+              placeholder="Player name"
+              className="h-9 text-sm"
+            />
+            <datalist id={datalistId}>
+              {knownPlayerNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </div>
+          <button
+            onClick={() => onRemove(player.id)}
+            className="w-8 h-8 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors shrink-0"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+        {/* Row 2: Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => onUpdate(player.id, { hasBoughtIn: !player.hasBoughtIn })}
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition-colors whitespace-nowrap ${
+              player.hasBoughtIn
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {player.hasBoughtIn ? "Bought In ✓" : "Buy In"}
+          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onUpdate(player.id, { rebuys: Math.max(0, player.rebuys - 1) })}
+              disabled={player.rebuys === 0}
+              className="w-7 h-7 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center transition-colors disabled:opacity-40"
+            >
+              <Minus size={10} />
+            </button>
+            <span className="w-8 text-center text-sm font-mono font-semibold text-foreground">{player.rebuys}</span>
+            <button
+              onClick={() => onUpdate(player.id, { rebuys: player.rebuys + 1 })}
+              className="w-7 h-7 rounded bg-accent/80 hover:bg-accent text-accent-foreground flex items-center justify-center transition-colors"
+            >
+              <Plus size={10} />
+            </button>
+            <span className="text-xs text-muted-foreground">rebuys</span>
+          </div>
+          <div className="flex items-center gap-1 ml-auto">
+            <Input
+              type="number"
+              value={player.finalChips === 0 ? "" : player.finalChips}
+              onChange={(e) =>
+                onUpdate(player.id, { finalChips: Math.max(0, parseInt(e.target.value) || 0) })
+              }
+              placeholder="0"
+              className="w-20 h-8 text-sm"
+            />
+            <span className="text-xs text-muted-foreground">chips</span>
+          </div>
+        </div>
+        {/* Row 3: Calculated stats */}
+        <div className="flex gap-4 pt-2 border-t border-border/40">
+          <div>
+            <div className="text-xs text-muted-foreground">chip $</div>
+            <div className="text-sm font-mono text-foreground">{fmt(chipsValue)}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">equity</div>
+            <div className="text-sm font-mono text-foreground">{fmt(potShare)}</div>
+          </div>
+          <div className="ml-auto text-right">
+            <div className="text-xs text-muted-foreground">payout</div>
+            <div className="text-sm font-mono font-semibold text-foreground">{fmt(totalPayout)}</div>
+            <div className={`text-xs font-mono font-bold ${netColor}`}>{net >= 0 ? "+" : ""}{fmt(net)}</div>
+          </div>
         </div>
       </div>
-
-      {/* Remove */}
-      <button
-        onClick={() => onRemove(player.id)}
-        className="w-7 h-7 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
-      >
-        <Trash2 size={13} />
-      </button>
     </div>
   );
 };
@@ -511,10 +587,10 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
         </div>
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
-          {/* Header */}
-          <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
+          {/* Desktop header */}
+          <div className="hidden sm:grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
             <span>Name</span>
-            <span className="w-24 text-center">Games Played</span>
+            <span className="w-24 text-center">Games</span>
             <span className="w-28 text-right">Highest Chips</span>
             <span className="w-28 text-right">Highest Payout</span>
             <span className="w-24 text-right">Avg Win/Loss</span>
@@ -530,93 +606,91 @@ const PlayersTab: React.FC<PlayersTabProps> = ({
                   : stats.avgNet < 0
                   ? "text-destructive"
                   : "text-muted-foreground";
+              const totalNetColor =
+                stats.totalNet > 0
+                  ? "text-emerald-500"
+                  : stats.totalNet < 0
+                  ? "text-destructive"
+                  : "text-muted-foreground";
               const isEditing = editingId === kp.id;
               return (
-                <div
-                  key={kp.id}
-                  className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
-                >
-                  {/* Name / edit */}
-                  {isEditing ? (
-                    <div className="flex gap-1 items-center">
-                      <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") commitEdit(kp.id);
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        className="h-7 text-sm"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => commitEdit(kp.id)}
-                        className="w-6 h-6 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-500 flex items-center justify-center"
-                      >
-                        <Check size={12} />
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-medium text-foreground">{kp.name}</span>
-                  )}
-
-                  <span className="w-24 text-center text-sm font-mono text-foreground">
-                    {stats.gamesPlayed}
-                  </span>
-                  <span className="w-28 text-right text-sm font-mono text-foreground">
-                    {stats.gamesPlayed > 0 ? stats.highestChips.toLocaleString() : "—"}
-                  </span>
-                  <span className="w-28 text-right text-sm font-mono text-foreground">
-                    {stats.gamesPlayed > 0 ? fmt(stats.highestPayout) : "—"}
-                  </span>
-                  <span
-                    className={`w-24 text-right text-sm font-mono font-semibold ${
-                      stats.gamesPlayed > 0 ? avgColor : "text-muted-foreground"
-                    }`}
-                  >
-                    {stats.gamesPlayed > 0
-                      ? `${stats.avgNet >= 0 ? "+" : ""}${fmt(stats.avgNet)}`
-                      : "—"}
-                  </span>
-
-                  <span
-                    className={`w-28 text-right text-sm font-mono font-bold ${
-                      stats.gamesPlayed > 0
-                        ? stats.totalNet > 0
-                          ? "text-emerald-500"
-                          : stats.totalNet < 0
-                          ? "text-destructive"
-                          : "text-muted-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {stats.gamesPlayed > 0
-                      ? `${stats.totalNet >= 0 ? "+" : ""}${fmt(stats.totalNet)}`
-                      : "—"}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="w-14 flex gap-1 justify-end">
-                    {!isEditing && (
-                      <button
-                        onClick={() => startEdit(kp)}
-                        className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
-                      >
-                        <Pencil size={11} />
-                      </button>
+                <div key={kp.id} className="bg-card hover:bg-muted/20 transition-colors">
+                  {/* Desktop row */}
+                  <div className="hidden sm:grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center">
+                    {isEditing ? (
+                      <div className="flex gap-1 items-center">
+                        <Input
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitEdit(kp.id);
+                            if (e.key === "Escape") cancelEdit();
+                          }}
+                          className="h-7 text-sm"
+                          autoFocus
+                        />
+                        <button onClick={() => commitEdit(kp.id)} className="w-6 h-6 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-500 flex items-center justify-center"><Check size={12} /></button>
+                        <button onClick={cancelEdit} className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center"><X size={12} /></button>
+                      </div>
+                    ) : (
+                      <span className="text-sm font-medium text-foreground">{kp.name}</span>
                     )}
-                    <button
-                      onClick={() => onDelete(kp.id)}
-                      className="w-6 h-6 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
-                    >
-                      <Trash2 size={11} />
-                    </button>
+                    <span className="w-24 text-center text-sm font-mono text-foreground">{stats.gamesPlayed}</span>
+                    <span className="w-28 text-right text-sm font-mono text-foreground">{stats.gamesPlayed > 0 ? stats.highestChips.toLocaleString() : "—"}</span>
+                    <span className="w-28 text-right text-sm font-mono text-foreground">{stats.gamesPlayed > 0 ? fmt(stats.highestPayout) : "—"}</span>
+                    <span className={`w-24 text-right text-sm font-mono font-semibold ${stats.gamesPlayed > 0 ? avgColor : "text-muted-foreground"}`}>
+                      {stats.gamesPlayed > 0 ? `${stats.avgNet >= 0 ? "+" : ""}${fmt(stats.avgNet)}` : "—"}
+                    </span>
+                    <span className={`w-28 text-right text-sm font-mono font-bold ${stats.gamesPlayed > 0 ? totalNetColor : "text-muted-foreground"}`}>
+                      {stats.gamesPlayed > 0 ? `${stats.totalNet >= 0 ? "+" : ""}${fmt(stats.totalNet)}` : "—"}
+                    </span>
+                    <div className="w-14 flex gap-1 justify-end">
+                      {!isEditing && (
+                        <button onClick={() => startEdit(kp)} className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"><Pencil size={11} /></button>
+                      )}
+                      <button onClick={() => onDelete(kp.id)} className="w-6 h-6 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"><Trash2 size={11} /></button>
+                    </div>
+                  </div>
+
+                  {/* Mobile card */}
+                  <div className="sm:hidden px-4 py-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      {isEditing ? (
+                        <div className="flex gap-1 items-center flex-1">
+                          <Input
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") commitEdit(kp.id);
+                              if (e.key === "Escape") cancelEdit();
+                            }}
+                            className="h-8 text-sm flex-1"
+                            autoFocus
+                          />
+                          <button onClick={() => commitEdit(kp.id)} className="w-7 h-7 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-500 flex items-center justify-center shrink-0"><Check size={12} /></button>
+                          <button onClick={cancelEdit} className="w-7 h-7 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center shrink-0"><X size={12} /></button>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-semibold text-foreground flex-1">{kp.name}</span>
+                      )}
+                      {!isEditing && (
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => startEdit(kp)} className="w-7 h-7 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"><Pencil size={11} /></button>
+                          <button onClick={() => onDelete(kp.id)} className="w-7 h-7 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"><Trash2 size={11} /></button>
+                        </div>
+                      )}
+                    </div>
+                    {stats.gamesPlayed > 0 ? (
+                      <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs">
+                        <div><span className="text-muted-foreground">Games: </span><span className="font-mono text-foreground">{stats.gamesPlayed}</span></div>
+                        <div><span className="text-muted-foreground">Best chips: </span><span className="font-mono text-foreground">{stats.highestChips.toLocaleString()}</span></div>
+                        <div><span className="text-muted-foreground">Best payout: </span><span className="font-mono text-foreground">{fmt(stats.highestPayout)}</span></div>
+                        <div><span className="text-muted-foreground">Avg: </span><span className={`font-mono font-semibold ${avgColor}`}>{stats.avgNet >= 0 ? "+" : ""}{fmt(stats.avgNet)}</span></div>
+                        <div className="col-span-2"><span className="text-muted-foreground">Total P/L: </span><span className={`font-mono font-bold ${totalNetColor}`}>{stats.totalNet >= 0 ? "+" : ""}{fmt(stats.totalNet)}</span></div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No games archived yet</p>
+                    )}
                   </div>
                 </div>
               );
@@ -748,46 +822,73 @@ const CrapsCalculator: React.FC = () => {
       <Tabs defaultValue="today">
         {/* Header */}
         <div className="border-b border-border bg-card">
-          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                <Rocket size={22} />
+          <div className="max-w-6xl mx-auto px-4 py-3">
+            {/* Top row: logo + title + (desktop tabs) + theme toggle */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                  <Rocket size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-xl font-bold text-foreground tracking-tight truncate">
+                    <span className="sm:hidden">Rocket Craps</span>
+                    <span className="hidden sm:inline">Rocket Craps Payout Calculator</span>
+                  </h1>
+                  <p className="text-xs text-muted-foreground hidden sm:block">
+                    Track buy-ins, rebuys, chip counts &amp; payouts
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground tracking-tight">
-                  Rocket Craps Payout Calculator
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Track buy-ins, rebuys, chip counts &amp; payouts
-                </p>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Desktop tabs */}
+                <TabsList className="hidden sm:inline-flex">
+                  <TabsTrigger value="today">Today's Game</TabsTrigger>
+                  <TabsTrigger value="archive">
+                    Archive
+                    {archive.length > 0 && (
+                      <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                        {archive.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="players">
+                    Players
+                    {knownPlayers.length > 0 && (
+                      <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                        {knownPlayers.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+                <ThemeToggle />
               </div>
             </div>
-            <TabsList className="ml-4">
-              <TabsTrigger value="today">Today's Game</TabsTrigger>
-              <TabsTrigger value="archive">
-                Archive
-                {archive.length > 0 && (
-                  <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
-                    {archive.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="players">
-                Players
-                {knownPlayers.length > 0 && (
-                  <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
-                    {knownPlayers.length}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            <div className="ml-auto">
-              <ThemeToggle />
+            {/* Mobile tabs row */}
+            <div className="sm:hidden mt-2.5">
+              <TabsList className="w-full">
+                <TabsTrigger value="today" className="flex-1 text-xs">Game</TabsTrigger>
+                <TabsTrigger value="archive" className="flex-1 text-xs">
+                  Archive
+                  {archive.length > 0 && (
+                    <span className="ml-1 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                      {archive.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="players" className="flex-1 text-xs">
+                  Players
+                  {knownPlayers.length > 0 && (
+                    <span className="ml-1 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                      {knownPlayers.length}
+                    </span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="max-w-6xl mx-auto px-4 py-4 sm:py-6">
 
           {/* ── Today Game Tab ── */}
           <TabsContent value="today" className="space-y-5">
@@ -830,7 +931,7 @@ const CrapsCalculator: React.FC = () => {
                   <Separator orientation="vertical" className="h-12 hidden sm:block" />
 
                   {/* Derived stats */}
-                  <div className="flex gap-5 flex-wrap ml-auto">
+                  <div className="flex gap-4 flex-wrap w-full sm:w-auto sm:ml-auto">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Chip Value</div>
                       <div className="text-lg font-mono font-bold text-emerald-500">{fmtChipValue(chipValue)}</div>
@@ -871,8 +972,8 @@ const CrapsCalculator: React.FC = () => {
               </span>
             </div>
 
-            {/* Column headers */}
-            <div className="grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
+            {/* Column headers — desktop only */}
+            <div className="hidden sm:grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
               <span className="whitespace-nowrap">Player</span>
               <span className="whitespace-nowrap">Buy-in</span>
               <span className="whitespace-nowrap">Rebuys</span>
@@ -965,12 +1066,12 @@ const CrapsCalculator: React.FC = () => {
             )}
 
             {/* Actions */}
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={resetGame}>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
+              <Button variant="outline" onClick={resetGame} className="w-full sm:w-auto">
                 <RefreshCw size={14} className="mr-2" />
                 Reset Scores
               </Button>
-              <Button onClick={saveToArchive} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button onClick={saveToArchive} className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto">
                 <Archive size={14} className="mr-2" />
                 {savedMsg ? "Saved ✓" : "Save to Archive"}
               </Button>
