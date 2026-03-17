@@ -19,6 +19,10 @@ import {
   Dices,
   Sun,
   Moon,
+  Users,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,10 +45,23 @@ interface GameSession {
   chipValue: number;
 }
 
+interface KnownPlayer {
+  id: string;
+  name: string;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+const fmtChipValue = (n: number) =>
+  n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
+  });
 
 const newPlayer = (name = ""): Player => ({
   id: crypto.randomUUID(),
@@ -81,6 +98,53 @@ function playerStats(
   return { chipsValue, potShare, totalPayout, totalPaid, net };
 }
 
+// ─── Storage ──────────────────────────────────────────────────────────────────
+
+const ARCHIVE_KEY = "craps_archive";
+const PLAYERS_KEY = "craps_players";
+
+const loadArchive = (): GameSession[] => {
+  try {
+    return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const saveArchive = (sessions: GameSession[]) => {
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sessions));
+};
+
+const loadKnownPlayers = (archive: GameSession[]): KnownPlayer[] => {
+  try {
+    const stored: KnownPlayer[] = JSON.parse(
+      localStorage.getItem(PLAYERS_KEY) || "[]"
+    );
+    // Seed any names from archive that aren't already stored
+    const storedNames = new Set(stored.map((p) => p.name.toLowerCase()));
+    const merged = [...stored];
+    archive.forEach((s) =>
+      s.players.forEach((p) => {
+        const trimmed = p.name.trim();
+        if (trimmed && !storedNames.has(trimmed.toLowerCase())) {
+          merged.push({ id: crypto.randomUUID(), name: trimmed });
+          storedNames.add(trimmed.toLowerCase());
+        }
+      })
+    );
+    if (merged.length > stored.length) {
+      localStorage.setItem(PLAYERS_KEY, JSON.stringify(merged));
+    }
+    return merged;
+  } catch {
+    return [];
+  }
+};
+
+const saveKnownPlayers = (players: KnownPlayer[]) => {
+  localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
+};
+
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
 
 const ThemeToggle: React.FC = () => {
@@ -103,6 +167,7 @@ interface PlayerRowProps {
   buyIn: number;
   chipValue: number;
   potSharePerOwner: number;
+  knownPlayerNames: string[];
   onUpdate: (id: string, updates: Partial<Player>) => void;
   onRemove: (id: string) => void;
 }
@@ -112,6 +177,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   buyIn,
   chipValue,
   potSharePerOwner,
+  knownPlayerNames,
   onUpdate,
   onRemove,
 }) => {
@@ -125,15 +191,25 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   const netColor =
     net > 0 ? "text-emerald-500" : net < 0 ? "text-destructive" : "text-muted-foreground";
 
+  const datalistId = `players-list-${player.id}`;
+
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
-      {/* Name */}
-      <Input
-        value={player.name}
-        onChange={(e) => onUpdate(player.id, { name: e.target.value })}
-        placeholder="Player name"
-        className="h-8 text-sm"
-      />
+      {/* Name with datalist dropdown */}
+      <div>
+        <Input
+          list={datalistId}
+          value={player.name}
+          onChange={(e) => onUpdate(player.id, { name: e.target.value })}
+          placeholder="Player name"
+          className="h-8 text-sm"
+        />
+        <datalist id={datalistId}>
+          {knownPlayerNames.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+      </div>
 
       {/* Bought-in toggle */}
       <button
@@ -170,7 +246,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
         <span className="text-xs text-muted-foreground ml-0.5">rebuys</span>
       </div>
 
-      {/* Final chips */}
+      {/* Final chips input */}
       <div className="flex items-center gap-1">
         <Input
           type="number"
@@ -181,18 +257,18 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
           placeholder="0"
           className="w-20 h-8 text-sm text-center"
         />
-        <span className="text-xs text-muted-foreground">chips</span>
+        <span className="text-xs text-muted-foreground">final chips</span>
       </div>
 
       {/* Chip cash value */}
       <div className="text-right min-w-[64px]">
-        <div className="text-xs text-muted-foreground">chips</div>
+        <div className="text-xs text-muted-foreground">chip value</div>
         <div className="text-sm font-mono text-foreground">{fmt(chipsValue)}</div>
       </div>
 
-      {/* Pot share */}
+      {/* Equity stake */}
       <div className="text-right min-w-[64px]">
-        <div className="text-xs text-muted-foreground">pot share</div>
+        <div className="text-xs text-muted-foreground">equity stake</div>
         <div className="text-sm font-mono text-foreground">{fmt(potShare)}</div>
       </div>
 
@@ -262,10 +338,10 @@ const ArchiveEntry: React.FC<{
       {expanded && (
         <div className="px-4 pb-4 border-t border-border">
           <div className="mt-3 flex gap-4 text-xs text-muted-foreground mb-3 flex-wrap">
-            <span>Chip value: {fmt(chipValue)}/chip</span>
-            <span>Pot: {fmt(session.pot)}</span>
+            <span>Chip value: {fmtChipValue(chipValue)}/chip</span>
+            <span>Bank value: {fmt(session.pot)}</span>
             <span>Owners: {numOwners}</span>
-            <span>Pot/owner: {fmt(potSharePerOwner)}</span>
+            <span>Value per: {fmt(potSharePerOwner)}</span>
           </div>
           <div className="space-y-2">
             {session.players.map((p) => {
@@ -301,21 +377,216 @@ const ArchiveEntry: React.FC<{
   );
 };
 
+// ─── PlayersTab ───────────────────────────────────────────────────────────────
+
+interface PlayersTabProps {
+  knownPlayers: KnownPlayer[];
+  archive: GameSession[];
+  onAdd: (name: string) => void;
+  onDelete: (id: string) => void;
+  onRename: (id: string, newName: string) => void;
+}
+
+const PlayersTab: React.FC<PlayersTabProps> = ({
+  knownPlayers,
+  archive,
+  onAdd,
+  onDelete,
+  onRename,
+}) => {
+  const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+
+  const getPlayerArchiveStats = (name: string) => {
+    const sessions = archive.filter((s) =>
+      s.players.some((p) => p.name.toLowerCase() === name.toLowerCase())
+    );
+    if (sessions.length === 0) {
+      return { gamesPlayed: 0, highestChips: 0, highestPayout: 0, avgNet: 0 };
+    }
+    const entries = sessions.map((s) => {
+      const p = s.players.find((pl) => pl.name.toLowerCase() === name.toLowerCase())!;
+      const cv = calcChipValue(s.buyIn, s.initialChips);
+      const owners = calcNumOwners(s.players);
+      const potPerOwner = owners > 0 ? s.pot / owners : 0;
+      const stats = playerStats(p, s.buyIn, cv, potPerOwner);
+      return { finalChips: p.finalChips, payout: stats.totalPayout, net: stats.net };
+    });
+    return {
+      gamesPlayed: sessions.length,
+      highestChips: Math.max(...entries.map((e) => e.finalChips)),
+      highestPayout: Math.max(...entries.map((e) => e.payout)),
+      avgNet: entries.reduce((s, e) => s + e.net, 0) / entries.length,
+    };
+  };
+
+  const handleAdd = () => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    if (knownPlayers.some((p) => p.name.toLowerCase() === trimmed.toLowerCase())) return;
+    onAdd(trimmed);
+    setNewName("");
+  };
+
+  const startEdit = (player: KnownPlayer) => {
+    setEditingId(player.id);
+    setEditValue(player.name);
+  };
+
+  const commitEdit = (id: string) => {
+    const trimmed = editValue.trim();
+    if (
+      trimmed &&
+      !knownPlayers.some(
+        (p) => p.id !== id && p.name.toLowerCase() === trimmed.toLowerCase()
+      )
+    ) {
+      onRename(id, trimmed);
+    }
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => setEditingId(null);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Players
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {knownPlayers.length} player{knownPlayers.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Add new player */}
+      <div className="flex gap-2">
+        <Input
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
+          placeholder="New player name…"
+          className="h-9"
+        />
+        <Button onClick={handleAdd} className="shrink-0">
+          <Plus size={14} className="mr-1" />
+          Add
+        </Button>
+      </div>
+
+      {/* Table */}
+      {knownPlayers.length === 0 ? (
+        <div className="text-center py-16 text-muted-foreground">
+          <Users size={40} className="mx-auto mb-3 opacity-30" />
+          <p className="text-sm">No players yet.</p>
+          <p className="text-xs mt-1 text-muted-foreground/60">
+            Add players above, or archive a game to auto-add players.
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border overflow-hidden">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-2 bg-muted/50 text-xs text-muted-foreground uppercase tracking-wider">
+            <span>Name</span>
+            <span className="w-16 text-center">Games</span>
+            <span className="w-24 text-right">High Chips</span>
+            <span className="w-24 text-right">High Payout</span>
+            <span className="w-24 text-right">Avg Win/Loss</span>
+            <span className="w-14" />
+          </div>
+          <div className="divide-y divide-border">
+            {knownPlayers.map((kp) => {
+              const stats = getPlayerArchiveStats(kp.name);
+              const avgColor =
+                stats.avgNet > 0
+                  ? "text-emerald-500"
+                  : stats.avgNet < 0
+                  ? "text-destructive"
+                  : "text-muted-foreground";
+              const isEditing = editingId === kp.id;
+              return (
+                <div
+                  key={kp.id}
+                  className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-3 px-4 py-3 items-center bg-card hover:bg-muted/20 transition-colors"
+                >
+                  {/* Name / edit */}
+                  {isEditing ? (
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit(kp.id);
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        className="h-7 text-sm"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => commitEdit(kp.id)}
+                        className="w-6 h-6 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-500 flex items-center justify-center"
+                      >
+                        <Check size={12} />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground flex items-center justify-center"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-medium text-foreground">{kp.name}</span>
+                  )}
+
+                  <span className="w-16 text-center text-sm font-mono text-foreground">
+                    {stats.gamesPlayed}
+                  </span>
+                  <span className="w-24 text-right text-sm font-mono text-foreground">
+                    {stats.gamesPlayed > 0 ? stats.highestChips.toLocaleString() : "—"}
+                  </span>
+                  <span className="w-24 text-right text-sm font-mono text-foreground">
+                    {stats.gamesPlayed > 0 ? fmt(stats.highestPayout) : "—"}
+                  </span>
+                  <span
+                    className={`w-24 text-right text-sm font-mono font-semibold ${
+                      stats.gamesPlayed > 0 ? avgColor : "text-muted-foreground"
+                    }`}
+                  >
+                    {stats.gamesPlayed > 0
+                      ? `${stats.avgNet >= 0 ? "+" : ""}${fmt(stats.avgNet)}`
+                      : "—"}
+                  </span>
+
+                  {/* Actions */}
+                  <div className="w-14 flex gap-1 justify-end">
+                    {!isEditing && (
+                      <button
+                        onClick={() => startEdit(kp)}
+                        className="w-6 h-6 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors"
+                      >
+                        <Pencil size={11} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(kp.id)}
+                      className="w-6 h-6 rounded bg-muted hover:bg-destructive/20 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Main Calculator ──────────────────────────────────────────────────────────
-
-const ARCHIVE_KEY = "craps_archive";
-
-const loadArchive = (): GameSession[] => {
-  try {
-    return JSON.parse(localStorage.getItem(ARCHIVE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-};
-
-const saveArchive = (sessions: GameSession[]) => {
-  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sessions));
-};
 
 const CrapsCalculator: React.FC = () => {
   const [buyIn, setBuyIn] = useState(25);
@@ -325,12 +596,18 @@ const CrapsCalculator: React.FC = () => {
     newPlayer("Player 2"),
   ]);
   const [archive, setArchive] = useState<GameSession[]>(loadArchive);
+  const [knownPlayers, setKnownPlayers] = useState<KnownPlayer[]>(() => {
+    const arch = loadArchive();
+    return loadKnownPlayers(arch);
+  });
   const [savedMsg, setSavedMsg] = useState(false);
 
   const chipValue = calcChipValue(buyIn, initialChips);
   const pot = calcPot(players, buyIn);
   const numOwners = calcNumOwners(players);
   const potSharePerOwner = numOwners > 0 ? pot / numOwners : 0;
+
+  const knownPlayerNames = knownPlayers.map((p) => p.name);
 
   const updatePlayer = useCallback(
     (id: string, updates: Partial<Player>) =>
@@ -361,9 +638,21 @@ const CrapsCalculator: React.FC = () => {
       pot,
       chipValue,
     };
-    const updated = [session, ...archive];
-    setArchive(updated);
-    saveArchive(updated);
+    const updatedArchive = [session, ...archive];
+    setArchive(updatedArchive);
+    saveArchive(updatedArchive);
+
+    // Add any new player names to knownPlayers
+    const existingNames = new Set(knownPlayers.map((p) => p.name.toLowerCase()));
+    const newKnown = players
+      .filter((p) => p.name.trim() && !existingNames.has(p.name.trim().toLowerCase()))
+      .map((p) => ({ id: crypto.randomUUID(), name: p.name.trim() }));
+    if (newKnown.length > 0) {
+      const updatedKnown = [...knownPlayers, ...newKnown];
+      setKnownPlayers(updatedKnown);
+      saveKnownPlayers(updatedKnown);
+    }
+
     setSavedMsg(true);
     setTimeout(() => setSavedMsg(false), 2500);
   };
@@ -373,6 +662,39 @@ const CrapsCalculator: React.FC = () => {
     setArchive(updated);
     saveArchive(updated);
   };
+
+  const addKnownPlayer = (name: string) => {
+    const updated = [...knownPlayers, { id: crypto.randomUUID(), name }];
+    setKnownPlayers(updated);
+    saveKnownPlayers(updated);
+  };
+
+  const deleteKnownPlayer = (id: string) => {
+    const updated = knownPlayers.filter((p) => p.id !== id);
+    setKnownPlayers(updated);
+    saveKnownPlayers(updated);
+  };
+
+  const renameKnownPlayer = (id: string, newName: string) => {
+    const updated = knownPlayers.map((p) => (p.id === id ? { ...p, name: newName } : p));
+    setKnownPlayers(updated);
+    saveKnownPlayers(updated);
+  };
+
+  // Game count from archive for a player name (used in payout summary)
+  const getGameCount = (name: string): number => {
+    if (!name.trim()) return 0;
+    return archive.filter((s) =>
+      s.players.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
+    ).length;
+  };
+
+  // Sorted players for payout summary — highest net to lowest
+  const sortedByNet = [...players].sort((a, b) => {
+    const statsA = playerStats(a, buyIn, chipValue, potSharePerOwner);
+    const statsB = playerStats(b, buyIn, chipValue, potSharePerOwner);
+    return statsB.net - statsA.net;
+  });
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -397,9 +719,9 @@ const CrapsCalculator: React.FC = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        <Tabs defaultValue="calculator">
+        <Tabs defaultValue="today">
           <TabsList className="mb-6">
-            <TabsTrigger value="calculator">Calculator</TabsTrigger>
+            <TabsTrigger value="today">Today Game</TabsTrigger>
             <TabsTrigger value="archive">
               Archive
               {archive.length > 0 && (
@@ -408,10 +730,18 @@ const CrapsCalculator: React.FC = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="players">
+              Players
+              {knownPlayers.length > 0 && (
+                <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                  {knownPlayers.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
-          {/* ── Calculator Tab ── */}
-          <TabsContent value="calculator" className="space-y-5">
+          {/* ── Today Game Tab ── */}
+          <TabsContent value="today" className="space-y-5">
 
             {/* Settings */}
             <Card>
@@ -455,18 +785,18 @@ const CrapsCalculator: React.FC = () => {
                   <div className="flex gap-5 flex-wrap ml-auto">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Chip Value</div>
-                      <div className="text-lg font-mono font-bold text-accent">{fmt(chipValue)}</div>
+                      <div className="text-lg font-mono font-bold text-accent">{fmtChipValue(chipValue)}</div>
                       <div className="text-xs text-muted-foreground">per chip</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-muted-foreground mb-0.5">Total Pot</div>
+                      <div className="text-xs text-muted-foreground mb-0.5">Bank Value</div>
                       <div className="text-lg font-mono font-bold text-emerald-500">{fmt(pot)}</div>
                       <div className="text-xs text-muted-foreground">
                         {numOwners} owner{numOwners !== 1 ? "s" : ""}
                       </div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs text-muted-foreground mb-0.5">Pot / Owner</div>
+                      <div className="text-xs text-muted-foreground mb-0.5">Value per</div>
                       <div className="text-lg font-mono font-bold text-primary">{fmt(potSharePerOwner)}</div>
                       <div className="text-xs text-muted-foreground">equal share</div>
                     </div>
@@ -484,7 +814,7 @@ const CrapsCalculator: React.FC = () => {
                 <strong className="text-foreground">Rebuy (+):</strong> ½ → chips · ½ → pot (no new ownership)
               </span>
               <span>
-                <strong className="text-foreground">End of night:</strong> chips × {fmt(chipValue)} + equal pot share
+                <strong className="text-foreground">End of night:</strong> chips × {fmtChipValue(chipValue)} + equal pot share
               </span>
             </div>
 
@@ -494,8 +824,8 @@ const CrapsCalculator: React.FC = () => {
               <span className="w-[88px] text-center">Buy-in</span>
               <span className="w-[108px] text-center">Rebuys</span>
               <span className="w-[100px] text-center">Final Chips</span>
-              <span className="w-[64px] text-right">Chips $</span>
-              <span className="w-[64px] text-right">Pot $</span>
+              <span className="w-[64px] text-right">Chip Value</span>
+              <span className="w-[64px] text-right">Equity</span>
               <span className="w-[72px] text-right">Payout / Net</span>
               <span className="w-7" />
             </div>
@@ -509,6 +839,7 @@ const CrapsCalculator: React.FC = () => {
                   buyIn={buyIn}
                   chipValue={chipValue}
                   potSharePerOwner={potSharePerOwner}
+                  knownPlayerNames={knownPlayerNames}
                   onUpdate={updatePlayer}
                   onRemove={removePlayer}
                 />
@@ -525,7 +856,7 @@ const CrapsCalculator: React.FC = () => {
               Add Player
             </Button>
 
-            {/* Summary cards */}
+            {/* Summary cards — sorted highest to lowest net */}
             {players.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
@@ -535,7 +866,7 @@ const CrapsCalculator: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {players.map((p) => {
+                    {sortedByNet.map((p) => {
                       const stats = playerStats(p, buyIn, chipValue, potSharePerOwner);
                       const netColor =
                         stats.net > 0
@@ -543,13 +874,21 @@ const CrapsCalculator: React.FC = () => {
                           : stats.net < 0
                           ? "text-destructive"
                           : "text-muted-foreground";
+                      const gameCount = getGameCount(p.name);
                       return (
                         <div
                           key={p.id}
                           className="bg-muted/40 rounded-lg p-3 border border-border"
                         >
-                          <div className="text-sm font-semibold text-foreground truncate mb-1">
-                            {p.name || "—"}
+                          <div className="flex items-baseline gap-1 mb-1 min-w-0">
+                            <span className="text-sm font-semibold text-foreground truncate">
+                              {p.name || "—"}
+                            </span>
+                            {gameCount > 0 && (
+                              <span className="text-xs text-muted-foreground font-normal shrink-0">
+                                ({gameCount})
+                              </span>
+                            )}
                           </div>
                           <div className="text-xl font-mono font-bold text-foreground">
                             {fmt(stats.totalPayout)}
@@ -599,7 +938,7 @@ const CrapsCalculator: React.FC = () => {
                 <Archive size={40} className="mx-auto mb-3 opacity-30" />
                 <p className="text-sm">No games archived yet.</p>
                 <p className="text-xs mt-1 text-muted-foreground/60">
-                  Click "Save to Archive" on the Calculator tab after a game.
+                  Click "Save to Archive" on the Today Game tab after a game.
                 </p>
               </div>
             ) : (
@@ -613,6 +952,17 @@ const CrapsCalculator: React.FC = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* ── Players Tab ── */}
+          <TabsContent value="players">
+            <PlayersTab
+              knownPlayers={knownPlayers}
+              archive={archive}
+              onAdd={addKnownPlayer}
+              onDelete={deleteKnownPlayer}
+              onRename={renameKnownPlayer}
+            />
           </TabsContent>
         </Tabs>
       </div>
