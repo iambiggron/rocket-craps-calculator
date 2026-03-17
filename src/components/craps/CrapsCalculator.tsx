@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   Dices,
+  Rocket,
   Sun,
   Moon,
   Users,
@@ -196,7 +197,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
   const datalistId = `players-list-${player.id}`;
 
   return (
-    <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto_auto] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
+    <div className="grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 items-center px-3 py-3 rounded-lg bg-card border border-border hover:border-ring/40 transition-colors">
       {/* Name with datalist dropdown */}
       <div>
         <Input
@@ -257,25 +258,25 @@ const PlayerRow: React.FC<PlayerRowProps> = ({
             onUpdate(player.id, { finalChips: Math.max(0, parseInt(e.target.value) || 0) })
           }
           placeholder="0"
-          className="w-20 h-8 text-sm text-center"
+          className="w-20 h-8 text-sm"
         />
         <span className="text-xs text-muted-foreground">final chips</span>
       </div>
 
       {/* Chip cash value */}
-      <div className="text-right min-w-[64px]">
+      <div>
         <div className="text-xs text-muted-foreground">chip value</div>
         <div className="text-sm font-mono text-foreground">{fmt(chipsValue)}</div>
       </div>
 
       {/* Equity stake */}
-      <div className="text-right min-w-[64px]">
+      <div>
         <div className="text-xs text-muted-foreground">equity stake</div>
         <div className="text-sm font-mono text-foreground">{fmt(potShare)}</div>
       </div>
 
       {/* Total payout + net */}
-      <div className="text-right min-w-[72px]">
+      <div>
         <div className="text-xs text-muted-foreground">payout</div>
         <div className="text-sm font-mono font-semibold text-foreground">{fmt(totalPayout)}</div>
         <div className={`text-xs font-mono font-bold ${netColor}`}>
@@ -726,60 +727,61 @@ const CrapsCalculator: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Dices size={22} />
+      <Tabs defaultValue="today">
+        {/* Header */}
+        <div className="border-b border-border bg-card">
+          <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-4">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                <Rocket size={22} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground tracking-tight">
+                  Rocket Craps Payout Calculator
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Track buy-ins, rebuys, chip counts &amp; payouts
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground tracking-tight">
-                Craps Night Payout Calculator
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Track buy-ins, rebuys, chip counts &amp; payouts
-              </p>
+            <TabsList className="ml-4">
+              <TabsTrigger value="today">Today's Game</TabsTrigger>
+              <TabsTrigger value="archive">
+                Archive
+                {archive.length > 0 && (
+                  <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                    {archive.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="players">
+                Players
+                {knownPlayers.length > 0 && (
+                  <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
+                    {knownPlayers.length}
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+            <div className="ml-auto">
+              <ThemeToggle />
             </div>
           </div>
-          <ThemeToggle />
         </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <Tabs defaultValue="today">
-          <TabsList className="mb-6">
-            <TabsTrigger value="today">Today's Game</TabsTrigger>
-            <TabsTrigger value="archive">
-              Archive
-              {archive.length > 0 && (
-                <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
-                  {archive.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="players">
-              Players
-              {knownPlayers.length > 0 && (
-                <span className="ml-1.5 bg-accent text-accent-foreground text-xs rounded-full px-1.5 py-0.5 leading-none font-semibold">
-                  {knownPlayers.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        <div className="max-w-6xl mx-auto px-4 py-6">
 
           {/* ── Today Game Tab ── */}
           <TabsContent value="today" className="space-y-5">
 
             {/* Settings */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Game Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-6 items-end">
+              <CardContent className="pt-4">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider shrink-0">
+                    Game Settings
+                  </span>
+                  <Separator orientation="vertical" className="h-10 hidden sm:block" />
                   <div className="space-y-1.5">
                     <Label className="text-xs text-muted-foreground">Buy-in / Rebuy Amount</Label>
                     <div className="flex items-center gap-1.5">
@@ -813,12 +815,12 @@ const CrapsCalculator: React.FC = () => {
                   <div className="flex gap-5 flex-wrap ml-auto">
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Chip Value</div>
-                      <div className="text-lg font-mono font-bold text-accent">{fmtChipValue(chipValue)}</div>
+                      <div className="text-lg font-mono font-bold text-emerald-500">{fmtChipValue(chipValue)}</div>
                       <div className="text-xs text-muted-foreground">per chip</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Game Total</div>
-                      <div className="text-lg font-mono font-bold text-orange-400">{fmt(gameTotal)}</div>
+                      <div className="text-lg font-mono font-bold text-emerald-500">{fmt(gameTotal)}</div>
                       <div className="text-xs text-muted-foreground">cash in</div>
                     </div>
                     <div className="text-center">
@@ -830,7 +832,7 @@ const CrapsCalculator: React.FC = () => {
                     </div>
                     <div className="text-center">
                       <div className="text-xs text-muted-foreground mb-0.5">Value per</div>
-                      <div className="text-lg font-mono font-bold text-primary">{fmt(potSharePerOwner)}</div>
+                      <div className="text-lg font-mono font-bold text-emerald-500">{fmt(potSharePerOwner)}</div>
                       <div className="text-xs text-muted-foreground">equal share</div>
                     </div>
                   </div>
@@ -852,15 +854,15 @@ const CrapsCalculator: React.FC = () => {
             </div>
 
             {/* Column headers */}
-            <div className="grid grid-cols-[minmax(60px,140px)_auto_auto_auto_auto_auto_auto_auto] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
-              <span>Player</span>
-              <span className="w-[88px] text-center">Buy-in</span>
-              <span className="w-[108px] text-center">Rebuys</span>
-              <span className="w-[100px] text-center">Final Chips</span>
-              <span className="w-[64px] text-right">Chip Value</span>
-              <span className="w-[64px] text-right">Equity</span>
-              <span className="w-[72px] text-right">Payout / Net</span>
-              <span className="w-7" />
+            <div className="grid grid-cols-[200px_100px_140px_140px_90px_90px_110px_32px] gap-2 px-3 text-xs text-muted-foreground uppercase tracking-wider">
+              <span className="whitespace-nowrap">Player</span>
+              <span className="whitespace-nowrap">Buy-in</span>
+              <span className="whitespace-nowrap">Rebuys</span>
+              <span className="whitespace-nowrap">Final Chips</span>
+              <span className="whitespace-nowrap">Chip Value</span>
+              <span className="whitespace-nowrap">Equity</span>
+              <span className="whitespace-nowrap">Payout / Net</span>
+              <span />
             </div>
 
             {/* Player rows */}
@@ -1012,8 +1014,8 @@ const CrapsCalculator: React.FC = () => {
               onRename={renameKnownPlayer}
             />
           </TabsContent>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 };
