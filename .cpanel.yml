@@ -2,5 +2,5 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/bidcalle/public_html/craps/
-    - /bin/cp -R dist/* $DEPLOYPATH
-    - if [ -f .htaccess ]; then /bin/cp .htaccess $DEPLOYPATH; fi
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -R dist/. $DEPLOYPATH
