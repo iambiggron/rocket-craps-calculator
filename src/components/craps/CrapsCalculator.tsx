@@ -826,7 +826,7 @@ const CrapsCalculator: React.FC = () => {
             {/* Top row: logo + title + (desktop tabs) + theme toggle */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/15 text-amber-500 shrink-0">
                   <Rocket size={20} />
                 </div>
                 <div className="min-w-0">
@@ -897,7 +897,7 @@ const CrapsCalculator: React.FC = () => {
             <Card>
               <CardContent className="pt-4">
                 <div className="flex flex-wrap gap-4 items-center">
-                  <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider shrink-0">
+                  <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider w-full text-center sm:w-auto sm:text-left sm:shrink-0">
                     Game Settings
                   </span>
                   <Separator orientation="vertical" className="h-10 hidden sm:block" />
@@ -960,7 +960,7 @@ const CrapsCalculator: React.FC = () => {
             </Card>
 
             {/* How it works */}
-            <div className="text-xs text-muted-foreground bg-muted/40 border border-border rounded-lg px-4 py-2.5 flex flex-wrap gap-x-6 gap-y-1">
+            <div className="hidden sm:flex text-xs text-muted-foreground bg-muted/40 border border-border rounded-lg px-4 py-2.5 flex-wrap gap-x-6 gap-y-1">
               <span>
                 <strong className="text-foreground">Initial buy-in:</strong> ½ → chips · ½ → bank (+ ownership share)
               </span>
@@ -1071,7 +1071,7 @@ const CrapsCalculator: React.FC = () => {
                 <RefreshCw size={14} className="mr-2" />
                 Reset Scores
               </Button>
-              <Button onClick={saveToArchive} className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto">
+              <Button onClick={saveToArchive} className="bg-amber-500 text-zinc-900 hover:bg-amber-500/90 w-full sm:w-auto">
                 <Archive size={14} className="mr-2" />
                 {savedMsg ? "Saved ✓" : "Save to Archive"}
               </Button>
