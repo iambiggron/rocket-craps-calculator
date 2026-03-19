@@ -958,7 +958,7 @@ const CrapsCalculator: React.FC = () => {
                     <span className="hidden sm:inline">Rocket Craps Payout Calculator</span>
                   </h1>
                   <p className="text-xs text-muted-foreground hidden sm:block">
-                    Track buy-ins, rebuys, chip counts &amp; payouts
+                    Track buy-ins, rebuys, chip counts &amp; payouts · v1.1
                   </p>
                 </div>
               </div>
