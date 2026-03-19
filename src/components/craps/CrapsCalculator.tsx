@@ -77,10 +77,12 @@ const newPlayer = (name = ""): Player => ({
 const calcChipValue = (buyIn: number, initialChips: number) =>
   initialChips > 0 ? buyIn / 2 / initialChips : 0;
 
-const calcPot = (players: Player[], buyIn: number) => {
+const calcPot = (players: Player[], buyIn: number, chipValue: number) => {
   const owners = players.filter((p) => p.hasBoughtIn).length;
   const totalRebuys = players.reduce((s, p) => s + p.rebuys, 0);
-  return (owners + totalRebuys) * (buyIn / 2);
+  const totalIn = (owners + totalRebuys) * buyIn;
+  const totalChipValue = players.reduce((s, p) => s + p.finalChips * chipValue, 0);
+  return Math.max(0, totalIn - totalChipValue);
 };
 
 const calcNumOwners = (players: Player[]) =>
@@ -812,7 +814,7 @@ const CrapsCalculator: React.FC = () => {
   }, []);
 
   const chipValue = calcChipValue(buyIn, initialChips);
-  const pot = calcPot(players, buyIn);
+  const pot = calcPot(players, buyIn, chipValue);
   const numOwners = calcNumOwners(players);
   const potSharePerOwner = numOwners > 0 ? pot / numOwners : 0;
   const totalRebuyCount = players.reduce((s, p) => s + p.rebuys, 0);
