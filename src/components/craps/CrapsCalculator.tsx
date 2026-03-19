@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,6 +147,34 @@ const loadKnownPlayers = (archive: GameSession[]): KnownPlayer[] => {
 const saveKnownPlayers = (players: KnownPlayer[]) => {
   localStorage.setItem(PLAYERS_KEY, JSON.stringify(players));
 };
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
+const API_BASE = "/craps/api";
+
+const apiGet = async <T,>(path: string): Promise<T> => {
+  const r = await fetch(`${API_BASE}${path}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json() as Promise<T>;
+};
+
+const apiPost = (path: string, body: unknown) =>
+  fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => {/* fire-and-forget */});
+
+const apiDelete = (path: string) =>
+  fetch(`${API_BASE}${path}`, { method: "DELETE" })
+    .catch(() => {/* fire-and-forget */});
+
+const apiPut = (path: string, body: unknown) =>
+  fetch(`${API_BASE}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => {/* fire-and-forget */});
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────────
 
@@ -718,6 +746,70 @@ const CrapsCalculator: React.FC = () => {
   });
   const [savedMsg, setSavedMsg] = useState(false);
   const [notes, setNotes] = useState("");
+  const [apiOnline, setApiOnline] = useState(false);
+
+  // ── Boot: load from DB, fall back to localStorage, auto-migrate ─────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [dbSessions, dbPlayers] = await Promise.all([
+          apiGet<GameSession[]>("/archive.php"),
+          apiGet<KnownPlayer[]>("/players.php"),
+        ]);
+        if (cancelled) return;
+        setApiOnline(true);
+
+        // If DB is empty but localStorage has data → migrate up
+        const localSessions = loadArchive();
+        const localPlayers = loadKnownPlayers(localSessions);
+
+        if (dbSessions.length === 0 && localSessions.length > 0) {
+          // Upload localStorage sessions to DB silently
+          for (const s of localSessions) {
+            await apiPost("/archive.php", {
+              id: s.id,
+              dateLabel: s.date,
+              buyIn: s.buyIn,
+              initialChips: s.initialChips,
+              pot: s.pot,
+              chipValue: s.chipValue,
+              notes: s.notes ?? null,
+              players: s.players.map((p, i) => ({
+                id: p.id,
+                name: p.name,
+                hasBoughtIn: p.hasBoughtIn,
+                rebuys: p.rebuys,
+                finalChips: p.finalChips,
+                sortOrder: i,
+              })),
+            });
+          }
+          // Upload localStorage players to DB
+          for (const p of localPlayers) {
+            await apiPost("/players.php", { id: p.id, name: p.name });
+          }
+          if (!cancelled) {
+            setArchive(localSessions);
+            setKnownPlayers(localPlayers);
+          }
+        } else {
+          // Use DB data as truth
+          if (!cancelled) {
+            setArchive(dbSessions);
+            saveArchive(dbSessions);
+            setKnownPlayers(dbPlayers);
+            saveKnownPlayers(dbPlayers);
+          }
+        }
+      } catch {
+        // DB unreachable — stay on localStorage data, no error shown to user
+        setApiOnline(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const chipValue = calcChipValue(buyIn, initialChips);
   const pot = calcPot(players, buyIn);
@@ -762,6 +854,27 @@ const CrapsCalculator: React.FC = () => {
     setArchive(updatedArchive);
     saveArchive(updatedArchive);
 
+    // Persist to DB (fire-and-forget)
+    if (apiOnline) {
+      apiPost("/archive.php", {
+        id: session.id,
+        dateLabel: session.date,
+        buyIn: session.buyIn,
+        initialChips: session.initialChips,
+        pot: session.pot,
+        chipValue: session.chipValue,
+        notes: session.notes ?? null,
+        players: session.players.map((p, i) => ({
+          id: p.id,
+          name: p.name,
+          hasBoughtIn: p.hasBoughtIn,
+          rebuys: p.rebuys,
+          finalChips: p.finalChips,
+          sortOrder: i,
+        })),
+      });
+    }
+
     // Add any new player names to knownPlayers
     const existingNames = new Set(knownPlayers.map((p) => p.name.toLowerCase()));
     const newKnown = players
@@ -771,6 +884,9 @@ const CrapsCalculator: React.FC = () => {
       const updatedKnown = [...knownPlayers, ...newKnown];
       setKnownPlayers(updatedKnown);
       saveKnownPlayers(updatedKnown);
+      if (apiOnline) {
+        newKnown.forEach((p) => apiPost("/players.php", { id: p.id, name: p.name }));
+      }
     }
 
     setNotes("");
@@ -782,24 +898,29 @@ const CrapsCalculator: React.FC = () => {
     const updated = archive.filter((s) => s.id !== id);
     setArchive(updated);
     saveArchive(updated);
+    if (apiOnline) apiDelete(`/archive.php?id=${encodeURIComponent(id)}`);
   };
 
   const addKnownPlayer = (name: string) => {
-    const updated = [...knownPlayers, { id: crypto.randomUUID(), name }];
+    const newP = { id: crypto.randomUUID(), name };
+    const updated = [...knownPlayers, newP];
     setKnownPlayers(updated);
     saveKnownPlayers(updated);
+    if (apiOnline) apiPost("/players.php", { id: newP.id, name: newP.name });
   };
 
   const deleteKnownPlayer = (id: string) => {
     const updated = knownPlayers.filter((p) => p.id !== id);
     setKnownPlayers(updated);
     saveKnownPlayers(updated);
+    if (apiOnline) apiDelete(`/players.php?id=${encodeURIComponent(id)}`);
   };
 
   const renameKnownPlayer = (id: string, newName: string) => {
     const updated = knownPlayers.map((p) => (p.id === id ? { ...p, name: newName } : p));
     setKnownPlayers(updated);
     saveKnownPlayers(updated);
+    if (apiOnline) apiPut("/players.php", { id, name: newName });
   };
 
   // Game count from archive for a player name (used in payout summary)

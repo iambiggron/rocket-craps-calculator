@@ -12,6 +12,9 @@ node_modules
 dist-ssr
 *.local
 
+# API credentials (create this file manually on the server)
+public/api/config.php
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
