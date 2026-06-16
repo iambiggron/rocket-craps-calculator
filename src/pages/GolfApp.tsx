@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { AppScreen, Round, PlayerScore, VerificationFlag } from "@/types/golf";
 import { MOCK_ROUND, MOCK_FLAGS } from "@/data/mockScorecardData";
 import { useToast } from "@/hooks/use-toast";
+import { runOCR, getStoredApiKey } from "@/utils/ocrService";
 
 import HomeScreen from "@/components/golf/HomeScreen";
 import ScanScreen from "@/components/golf/ScanScreen";
 import AnalysisScreen from "@/components/golf/AnalysisScreen";
 import ScorecardReview from "@/components/golf/ScorecardReview";
 import SavedRoundsScreen from "@/components/golf/SavedRoundsScreen";
+import ApiKeyDialog from "@/components/golf/ApiKeyDialog";
 
 const STORAGE_KEY = "golf-saved-rounds";
 
@@ -35,6 +37,7 @@ const GolfApp: React.FC = () => {
   const [currentFlags, setCurrentFlags] = useState<VerificationFlag[]>([]);
   const [savedRounds, setSavedRounds] = useState<Round[]>(loadSavedRounds);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
 
   // Persist saved rounds
   useEffect(() => {
@@ -60,15 +63,31 @@ const GolfApp: React.FC = () => {
     );
   }, [startAnalysis]);
 
-  const handleImageSelected = useCallback((file: File | null) => {
+  const handleImageSelected = useCallback(async (file: File | null) => {
     if (!file) return;
-    // In a real app this would call an OCR API.
-    // We simulate it with the mock data.
-    startAnalysis(
-      { ...MOCK_ROUND, id: `round-${Date.now()}` },
-      MOCK_FLAGS
-    );
-  }, [startAnalysis]);
+    const apiKey = getStoredApiKey();
+    if (!apiKey) {
+      setShowApiKeyDialog(true);
+      return;
+    }
+    setIsAnalyzing(true);
+    setScreen("analysis");
+    try {
+      const { round, flags } = await runOCR(file, apiKey);
+      setCurrentRound(round);
+      setCurrentFlags(flags);
+      setScreen("scorecard");
+    } catch (err) {
+      toast({
+        title: "OCR failed",
+        description: err instanceof Error ? err.message : "Could not read scorecard.",
+        variant: "destructive",
+      });
+      setScreen("scan");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [startAnalysis, toast]);
 
   const handleUpdateScore = useCallback(
     (playerId: string, holeNumber: number, newScore: number) => {
@@ -126,9 +145,10 @@ const GolfApp: React.FC = () => {
     setScreen("scorecard");
   }, []);
 
+  let content: React.ReactNode;
   switch (screen) {
     case "home":
-      return (
+      content = (
         <HomeScreen
           savedRounds={savedRounds}
           onScan={() => setScreen("scan")}
@@ -136,21 +156,23 @@ const GolfApp: React.FC = () => {
           onViewRound={handleViewRound}
         />
       );
-
+      break;
     case "scan":
-      return (
+      content = (
         <ScanScreen
           onBack={() => setScreen("home")}
           onImageSelected={handleImageSelected}
           onUseSample={handleUseSample}
+          onSetApiKey={() => setShowApiKeyDialog(true)}
+          hasApiKey={!!getStoredApiKey()}
         />
       );
-
+      break;
     case "analysis":
-      return <AnalysisScreen />;
-
+      content = <AnalysisScreen />;
+      break;
     case "scorecard":
-      return currentRound ? (
+      content = currentRound ? (
         <ScorecardReview
           round={currentRound}
           flags={currentFlags}
@@ -160,19 +182,30 @@ const GolfApp: React.FC = () => {
           onVerifyScore={handleVerifyScore}
         />
       ) : null;
-
+      break;
     case "saved":
-      return (
+      content = (
         <SavedRoundsScreen
           rounds={savedRounds}
           onBack={() => setScreen("home")}
           onViewRound={handleViewRound}
         />
       );
-
+      break;
     default:
-      return null;
+      content = null;
   }
+
+  return (
+    <>
+      {content}
+      <ApiKeyDialog
+        open={showApiKeyDialog}
+        onClose={() => setShowApiKeyDialog(false)}
+        onSaved={() => {}}
+      />
+    </>
+  );
 };
 
 export default GolfApp;

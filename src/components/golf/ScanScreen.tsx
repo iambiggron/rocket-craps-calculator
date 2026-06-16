@@ -1,14 +1,22 @@
 import React, { useRef } from "react";
-import { Camera, Image, FlaskConical, ArrowLeft } from "lucide-react";
+import { Camera, Image, FlaskConical, ArrowLeft, Key, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ScanScreenProps {
   onBack: () => void;
   onImageSelected: (file: File | null) => void;
   onUseSample: () => void;
+  onSetApiKey: () => void;
+  hasApiKey: boolean;
 }
 
-const ScanScreen: React.FC<ScanScreenProps> = ({ onBack, onImageSelected, onUseSample }) => {
+const ScanScreen: React.FC<ScanScreenProps> = ({
+  onBack,
+  onImageSelected,
+  onUseSample,
+  onSetApiKey,
+  hasApiKey,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +37,30 @@ const ScanScreen: React.FC<ScanScreenProps> = ({ onBack, onImageSelected, onUseS
           <p className="text-xs text-muted-foreground">Take a photo or choose from your library</p>
         </div>
       </div>
+
+      {/* API key status */}
+      <button
+        onClick={onSetApiKey}
+        className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-4 text-left w-full border transition-colors ${
+          hasApiKey
+            ? "bg-green-500/10 border-green-500/20 hover:bg-green-500/15"
+            : "bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15"
+        }`}
+      >
+        {hasApiKey ? (
+          <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+        ) : (
+          <Key className="w-4 h-4 text-amber-400 shrink-0" />
+        )}
+        <div className="flex-1 min-w-0">
+          <p className={`text-xs font-semibold ${hasApiKey ? "text-green-300" : "text-amber-300"}`}>
+            {hasApiKey ? "API key configured" : "API key required for real OCR"}
+          </p>
+          <p className="text-[10px] text-muted-foreground/70">
+            {hasApiKey ? "Tap to update your Anthropic API key" : "Tap to set your Anthropic API key"}
+          </p>
+        </div>
+      </button>
 
       {/* Upload area */}
       <div
