@@ -1,8 +1,6 @@
 import React from "react";
-import CrapsCalculator from "../components/craps/CrapsCalculator";
+import GolfApp from "./GolfApp";
 
-const Index: React.FC = () => {
-  return <CrapsCalculator />;
-};
+const Index: React.FC = () => <GolfApp />;
 
 export default Index;
