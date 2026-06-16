@@ -1,0 +1,183 @@
+import { Round, VerificationFlag } from "@/types/golf";
+
+export const MOCK_ROUND: Round = {
+  id: "round-001",
+  date: "2026-06-14",
+  course: {
+    name: "Pinecrest Golf Club",
+    rating: 72.4,
+    slope: 132,
+  },
+  holes: [
+    { number: 1,  par: 4, handicap: 7  },
+    { number: 2,  par: 5, handicap: 3  },
+    { number: 3,  par: 3, handicap: 17 },
+    { number: 4,  par: 4, handicap: 11 },
+    { number: 5,  par: 4, handicap: 15 },
+    { number: 6,  par: 5, handicap: 1  },
+    { number: 7,  par: 3, handicap: 13 },
+    { number: 8,  par: 4, handicap: 9  },
+    { number: 9,  par: 4, handicap: 5  },
+    { number: 10, par: 4, handicap: 6  },
+    { number: 11, par: 4, handicap: 16 },
+    { number: 12, par: 3, handicap: 18 },
+    { number: 13, par: 5, handicap: 4  },
+    { number: 14, par: 4, handicap: 8  },
+    { number: 15, par: 4, handicap: 12 },
+    { number: 16, par: 5, handicap: 2  },
+    { number: 17, par: 3, handicap: 14 },
+    { number: 18, par: 4, handicap: 10 },
+  ],
+  players: [
+    { id: "p1", name: "Alex M." },
+    { id: "p2", name: "Jordan K." },
+    { id: "p3", name: "Sam P." },
+  ],
+  scores: [
+    // Alex M. — total 84 (+12)
+    { playerId: "p1", holeNumber: 1,  score: 5, confidence: 0.94, isVerified: false },
+    { playerId: "p1", holeNumber: 2,  score: 6, confidence: 0.62, isVerified: false }, // flagged
+    { playerId: "p1", holeNumber: 3,  score: 3, confidence: 0.91, isVerified: false },
+    { playerId: "p1", holeNumber: 4,  score: 5, confidence: 0.88, isVerified: false },
+    { playerId: "p1", holeNumber: 5,  score: 4, confidence: 0.96, isVerified: false },
+    { playerId: "p1", holeNumber: 6,  score: 6, confidence: 0.85, isVerified: false },
+    { playerId: "p1", holeNumber: 7,  score: 4, confidence: 0.55, isVerified: false }, // flagged
+    { playerId: "p1", holeNumber: 8,  score: 5, confidence: 0.92, isVerified: false },
+    { playerId: "p1", holeNumber: 9,  score: 5, confidence: 0.89, isVerified: false },
+    { playerId: "p1", holeNumber: 10, score: 5, confidence: 0.87, isVerified: false },
+    { playerId: "p1", holeNumber: 11, score: 4, confidence: 0.93, isVerified: false },
+    { playerId: "p1", holeNumber: 12, score: 3, confidence: 0.91, isVerified: false },
+    { playerId: "p1", holeNumber: 13, score: 6, confidence: 0.90, isVerified: false },
+    { playerId: "p1", holeNumber: 14, score: 4, confidence: 0.88, isVerified: false },
+    { playerId: "p1", holeNumber: 15, score: 4, confidence: 0.93, isVerified: false },
+    { playerId: "p1", holeNumber: 16, score: 6, confidence: 0.86, isVerified: false },
+    { playerId: "p1", holeNumber: 17, score: 4, confidence: 0.50, isVerified: false }, // flagged
+    { playerId: "p1", holeNumber: 18, score: 5, confidence: 0.91, isVerified: false },
+
+    // Jordan K. — total 72 (E)
+    { playerId: "p2", holeNumber: 1,  score: 4, confidence: 0.95, isVerified: false },
+    { playerId: "p2", holeNumber: 2,  score: 4, confidence: 0.93, isVerified: false },
+    { playerId: "p2", holeNumber: 3,  score: 2, confidence: 0.88, isVerified: false },
+    { playerId: "p2", holeNumber: 4,  score: 4, confidence: 0.94, isVerified: false },
+    { playerId: "p2", holeNumber: 5,  score: 5, confidence: 0.58, isVerified: false }, // flagged
+    { playerId: "p2", holeNumber: 6,  score: 5, confidence: 0.92, isVerified: false },
+    { playerId: "p2", holeNumber: 7,  score: 3, confidence: 0.90, isVerified: false },
+    { playerId: "p2", holeNumber: 8,  score: 4, confidence: 0.87, isVerified: false },
+    { playerId: "p2", holeNumber: 9,  score: 4, confidence: 0.91, isVerified: false },
+    { playerId: "p2", holeNumber: 10, score: 4, confidence: 0.93, isVerified: false },
+    { playerId: "p2", holeNumber: 11, score: 4, confidence: 0.45, isVerified: false }, // flagged
+    { playerId: "p2", holeNumber: 12, score: 3, confidence: 0.88, isVerified: false },
+    { playerId: "p2", holeNumber: 13, score: 5, confidence: 0.92, isVerified: false },
+    { playerId: "p2", holeNumber: 14, score: 4, confidence: 0.89, isVerified: false },
+    { playerId: "p2", holeNumber: 15, score: 4, confidence: 0.94, isVerified: false },
+    { playerId: "p2", holeNumber: 16, score: 6, confidence: 0.87, isVerified: false },
+    { playerId: "p2", holeNumber: 17, score: 3, confidence: 0.90, isVerified: false },
+    { playerId: "p2", holeNumber: 18, score: 4, confidence: 0.86, isVerified: false },
+
+    // Sam P. — total 80 (+8)
+    { playerId: "p3", holeNumber: 1,  score: 5, confidence: 0.92, isVerified: false },
+    { playerId: "p3", holeNumber: 2,  score: 5, confidence: 0.89, isVerified: false },
+    { playerId: "p3", holeNumber: 3,  score: 4, confidence: 0.93, isVerified: false },
+    { playerId: "p3", holeNumber: 4,  score: 4, confidence: 0.68, isVerified: false }, // flagged
+    { playerId: "p3", holeNumber: 5,  score: 4, confidence: 0.91, isVerified: false },
+    { playerId: "p3", holeNumber: 6,  score: 5, confidence: 0.90, isVerified: false },
+    { playerId: "p3", holeNumber: 7,  score: 3, confidence: 0.88, isVerified: false },
+    { playerId: "p3", holeNumber: 8,  score: 5, confidence: 0.86, isVerified: false },
+    { playerId: "p3", holeNumber: 9,  score: 4, confidence: 0.94, isVerified: false },
+    { playerId: "p3", holeNumber: 10, score: 4, confidence: 0.91, isVerified: false },
+    { playerId: "p3", holeNumber: 11, score: 5, confidence: 0.87, isVerified: false },
+    { playerId: "p3", holeNumber: 12, score: 4, confidence: 0.65, isVerified: false }, // flagged
+    { playerId: "p3", holeNumber: 13, score: 6, confidence: 0.93, isVerified: false },
+    { playerId: "p3", holeNumber: 14, score: 5, confidence: 0.88, isVerified: false },
+    { playerId: "p3", holeNumber: 15, score: 4, confidence: 0.92, isVerified: false },
+    { playerId: "p3", holeNumber: 16, score: 5, confidence: 0.58, isVerified: false }, // flagged
+    { playerId: "p3", holeNumber: 17, score: 4, confidence: 0.90, isVerified: false },
+    { playerId: "p3", holeNumber: 18, score: 4, confidence: 0.89, isVerified: false },
+  ],
+};
+
+export const MOCK_FLAGS: VerificationFlag[] = [
+  {
+    id: "flag-001",
+    ocrFieldId: "ocr-p1-h2",
+    playerId: "p1",
+    holeNumber: 2,
+    field: "score",
+    currentValue: 6,
+    reason: "Digit is unclear — may be a 5, 6, or 8",
+    confidence: 0.62,
+  },
+  {
+    id: "flag-002",
+    ocrFieldId: "ocr-p1-h7",
+    playerId: "p1",
+    holeNumber: 7,
+    field: "score",
+    currentValue: 4,
+    reason: "Low contrast — handwriting hard to read",
+    confidence: 0.55,
+  },
+  {
+    id: "flag-003",
+    ocrFieldId: "ocr-p1-h17",
+    playerId: "p1",
+    holeNumber: 17,
+    field: "score",
+    currentValue: 4,
+    reason: "Smudged digit — uncertain value",
+    confidence: 0.50,
+  },
+  {
+    id: "flag-004",
+    ocrFieldId: "ocr-p2-h5",
+    playerId: "p2",
+    holeNumber: 5,
+    field: "score",
+    currentValue: 5,
+    reason: "Could be a 3 or 5 — ink faded",
+    confidence: 0.58,
+  },
+  {
+    id: "flag-005",
+    ocrFieldId: "ocr-p2-h11",
+    playerId: "p2",
+    holeNumber: 11,
+    field: "score",
+    currentValue: 4,
+    reason: "Very low confidence — digit heavily overwritten",
+    confidence: 0.45,
+  },
+  {
+    id: "flag-006",
+    ocrFieldId: "ocr-p3-h4",
+    playerId: "p3",
+    holeNumber: 4,
+    field: "score",
+    currentValue: 4,
+    reason: "Handwriting unclear — possibly a 9",
+    confidence: 0.68,
+  },
+  {
+    id: "flag-007",
+    ocrFieldId: "ocr-p3-h12",
+    playerId: "p3",
+    holeNumber: 12,
+    field: "score",
+    currentValue: 4,
+    reason: "Could be a 1 or 4 — vertical stroke ambiguous",
+    confidence: 0.65,
+  },
+  {
+    id: "flag-008",
+    ocrFieldId: "ocr-p3-h16",
+    playerId: "p3",
+    holeNumber: 16,
+    field: "score",
+    currentValue: 5,
+    reason: "Score crossed out and rewritten",
+    confidence: 0.58,
+  },
+];
+
+export const SAMPLE_IMAGE_PLACEHOLDER =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzFhMWExYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE2IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Hb2xmIFNjb3JlY2FyZDwvdGV4dD48L3N2Zz4=";
